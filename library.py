@@ -441,3 +441,16 @@ class CustomDropColumnsTransformer(BaseEstimator, TransformerMixin):
             The transformed DataFrame with columns dropped or kept as specified.
         """
         return self.transform(X)
+
+
+
+# Pipelines
+titanic_transformer = Pipeline(steps=[
+    ('gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
+    ('class', CustomMappingTransformer('Class', {'Crew': 0, 'C3': 1, 'C2': 2, 'C1': 3})),
+    ], verbose=True)
+
+
+customer_transformer = Pipeline(steps=[
+    ('dropper', CustomDropColumnsTransformer(column_list=['ID', 'First timer', 'Rating'], action='drop')),
+], verbose=True)
