@@ -680,4 +680,6 @@ titanic_transformer = Pipeline(steps=[
 
 customer_transformer = Pipeline(steps=[
     ('dropper', CustomDropColumnsTransformer(column_list=['ID', 'First timer', 'Rating'], action='drop')),
+    ('one_os', CustomOHETransformer(target_column='OS')),
+    ('one_isp', CustomOHETransformer(target_column='ISP')),
 ], verbose=True)
