@@ -445,6 +445,106 @@ class CustomDropColumnsTransformer(BaseEstimator, TransformerMixin):
         return self.transform(X)
 
 
+class CustomSigma3Transformer(BaseEstimator, TransformerMixin):
+    """
+    A transformer that applies 3-sigma clipping to a specified column in a pandas DataFrame.
+
+    This transformer follows the scikit-learn transformer interface and can be used in
+    a scikit-learn pipeline. It clips values in the target column to be within three standard
+    deviations from the mean.
+
+    Parameters
+    ----------
+    target_column : Hashable
+        The name of the column to apply 3-sigma clipping on.
+
+    Attributes
+    ----------
+    high_wall : Optional[float]
+        The upper bound for clipping, computed as mean + 3 * standard deviation.
+    low_wall : Optional[float]
+        The lower bound for clipping, computed as mean - 3 * standard deviation.
+    """
+    
+    def __init__(self, target_column):
+        self.target_column = target_column
+        self.high_wall = None
+        self.low_wall = None
+    
+    def fit(self, X, y=None):
+        """
+        Compute the 3-sigma boundaries for the target column.
+        
+        Parameters
+        ----------
+        X : pandas.DataFrame
+            The input DataFrame containing the target column.
+        y : ignored
+            Not used, present for API consistency.
+            
+        Returns
+        -------
+        self : returns an instance of self.
+        """
+        assert isinstance(X, pd.DataFrame), f'expected DataFrame but got {type(X)} instead.'
+        assert self.target_column in X.columns.to_list(), f'unknown column {self.target_column}'
+        assert pd.api.types.is_numeric_dtype(X[self.target_column]), f'expected numeric column but got {X[self.target_column].dtype}'
+        
+        # Compute mean and standard deviation
+        mean = X[self.target_column].mean()
+        std = X[self.target_column].std()
+        
+        # Compute boundaries
+        self.low_wall = mean - 3 * std
+        self.high_wall = mean + 3 * std
+        
+        return self
+    
+    def transform(self, X):
+        """
+        Apply 3-sigma clipping to the target column.
+        
+        Parameters
+        ----------
+        X : pandas.DataFrame
+            The input DataFrame containing the target column.
+            
+        Returns
+        -------
+        pandas.DataFrame
+            DataFrame with the target column clipped according to 3-sigma rule.
+        """
+        assert self.high_wall is not None and self.low_wall is not None, "Sigma3Transformer.fit has not been called yet."
+        assert isinstance(X, pd.DataFrame), f'expected DataFrame but got {type(X)} instead.'
+        assert self.target_column in X.columns.to_list(), f'unknown column {self.target_column}'
+        
+        # Create a copy of the input DataFrame
+        X_transformed = X.copy()
+        
+        # Apply clipping
+        X_transformed[self.target_column] = X_transformed[self.target_column].clip(lower=self.low_wall, upper=self.high_wall)
+        
+        return X_transformed
+    
+    def fit_transform(self, X, y=None):
+        """
+        Fit the transformer and then transform the data.
+        
+        Parameters
+        ----------
+        X : pandas.DataFrame
+            The input DataFrame containing the target column.
+        y : ignored
+            Not used, present for API consistency.
+            
+        Returns
+        -------
+        pandas.DataFrame
+            DataFrame with the target column clipped according to 3-sigma rule.
+        """
+        return self.fit(X).transform(X)
+
+
 
 # Pipelines
 titanic_transformer = Pipeline(steps=[
