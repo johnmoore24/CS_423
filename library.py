@@ -91,6 +91,7 @@ class CustomMappingTransformer(BaseEstimator, TransformerMixin):
         return self  #always the return value of fit
 
     def transform(self, X: pd.DataFrame) -> pd.DataFrame:
+        import warnings
         """
         Apply the mapping to the specified column in the input DataFrame.
 
