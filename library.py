@@ -681,7 +681,7 @@ titanic_transformer = Pipeline(steps=[
 customer_transformer = Pipeline(steps=[
     ('dropper', CustomDropColumnsTransformer(column_list=['ID', 'First timer', 'Rating'], action='drop')),
     ('gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
-    ('experience', CustomMappingTransformer('Experience Level', {'medium': 1.0})),
+    ('experience', CustomMappingTransformer('Experience Level', {'low': 0.0, 'medium': 1.0, 'high': 2.0})),
     ('one_os', CustomOHETransformer(target_column='OS')),
     ('one_isp', CustomOHETransformer(target_column='ISP')),
     ('time spent', CustomTukeyTransformer('Time Spent', 'inner')),
