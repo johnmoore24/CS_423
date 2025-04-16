@@ -1,0 +1,8 @@
+github_name = 'johnnycashpersonal'  #fill in with your user name
+repo_name = 'CS_423'   #fill in with your repo name
+source_file = 'library.py'  #fill in with file name
+
+url = f'https://raw.githubusercontent.com/{github_name}/{repo_name}/main/{source_file}'
+!rm $source_file
+!wget $url
+%run -i $source_file
