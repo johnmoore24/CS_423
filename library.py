@@ -7,6 +7,7 @@ from typing import Dict, Any, Optional, Union, List, Set, Hashable, Literal, Tup
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 import sklearn
+from sklearn.impute import KNNImputer
 sklearn.set_config(transform_output="pandas")  #says pass pandas tables through pipeline instead of numpy matrices
 
 class CustomMappingTransformer(BaseEstimator, TransformerMixin):
@@ -751,6 +752,98 @@ class CustomRobustTransformer(BaseEstimator, TransformerMixin):
         
         return X_transformed
 
+class CustomKNNTransformer(BaseEstimator, TransformerMixin):
+    """Imputes missing values using KNN.
+
+    This transformer wraps the KNNImputer from scikit-learn and hard-codes
+    add_indicator to be False. It also ensures that the input and output
+    are pandas DataFrames.
+
+    Parameters
+    ----------
+    n_neighbors : int, default=5
+        Number of neighboring samples to use for imputation.
+    weights : {'uniform', 'distance'}, default='uniform'
+        Weight function used in prediction. Possible values:
+        "uniform" : uniform weights. All points in each neighborhood
+        are weighted equally.
+        "distance" : weight points by the inverse of their distance.
+        in this case, closer neighbors of a query point will have a
+        greater influence than neighbors which are further away.
+    """
+    
+    def __init__(self, n_neighbors=5, weights='uniform'):
+        self.n_neighbors = n_neighbors
+        self.weights = weights
+        self.imputer = KNNImputer(
+            n_neighbors=n_neighbors,
+            weights=weights,
+            add_indicator=False  # Hard-coded to False as required
+        )
+        self.fitted = False  # Keep track of whether the transformer has been fitted
+        
+    def fit(self, X, y=None):
+        """Fit the imputer on X.
+        
+        Parameters
+        ----------
+        X : pandas DataFrame
+            Input data, where rows are samples and columns are features.
+        y : Ignored
+            Not used, present here for API consistency by convention.
+            
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
+        # Fit the KNNImputer
+        self.imputer.fit(X)
+        self.fitted = True  # Mark as fitted
+        self.columns_ = X.columns  # Store column names for transform
+        return self
+    
+    def transform(self, X):
+        """Impute missing values in X.
+        
+        Parameters
+        ----------
+        X : pandas DataFrame
+            The input data to complete.
+            
+        Returns
+        -------
+        pandas DataFrame
+            The imputed dataframe.
+        """
+        # Check if fitted
+        if not self.fitted:
+            raise ValueError("This CustomKNNTransformer instance is not fitted yet. "
+                             "Call 'fit' before calling 'transform'.")
+        
+        # Transform using the KNNImputer
+        imputed_array = self.imputer.transform(X)
+        
+        # Return as pandas DataFrame with original column names
+        return pd.DataFrame(imputed_array, index=X.index, columns=X.columns)
+    
+    def fit_transform(self, X, y=None):
+        """Fit to data, then transform it.
+        
+        Parameters
+        ----------
+        X : pandas DataFrame
+            Input data, where rows are samples and columns are features.
+        y : Ignored
+            Not used, present here for API consistency by convention.
+            
+        Returns
+        -------
+        pandas DataFrame
+            The imputed dataframe.
+        """
+        return self.fit(X).transform(X)
+
 
 # Pipelines
 titanic_transformer = Pipeline(steps=[
@@ -766,14 +859,16 @@ titanic_transformer = Pipeline(steps=[
 transformed_df = titanic_transformer.fit_transform(titanic_features)
 
 
+#Build pipeline and include scalers from last chapter and imputer from this
 customer_transformer = Pipeline(steps=[
     ('dropper', CustomDropColumnsTransformer(column_list=[ 'First timer', 'Rating'], action='drop')),
     ('gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
     ('experience', CustomMappingTransformer('Experience Level', {'low': 0.0, 'medium': 1.0, 'high': 2.0})),
-    #('one_os', CustomOHETransformer(target_column='OS')),
-    ('os_mapping', CustomMappingTransformer('OS', {'Android': 0.0, 'iOS': 1.0})),
+    ('one_os', CustomOHETransformer(target_column='OS')),
+    #('os_mapping', CustomMappingTransformer('OS', {'Android': 0.0, 'iOS': 1.0})),
     ('one_isp', CustomOHETransformer(target_column='ISP')),
     #('time spent', CustomTukeyTransformer('Time Spent', 'inner')),
     ('robust_scaler_time', CustomRobustTransformer('Time Spent')),
-    ('robust_scaler_age', CustomRobustTransformer('Age'))
+    ('robust_scaler_age', CustomRobustTransformer('Age')),
+    ('knn_imputer', CustomKNNTransformer(n_neighbors=5, weights='uniform'))
 ])
