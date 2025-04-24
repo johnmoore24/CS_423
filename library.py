@@ -667,6 +667,89 @@ class CustomTukeyTransformer(BaseEstimator, TransformerMixin):
         """
         return self.fit(X).transform(X)
 
+class CustomRobustTransformer(BaseEstimator, TransformerMixin):
+    """Applies robust scaling to a specified column in a pandas DataFrame.
+    This transformer calculates the interquartile range (IQR) and median
+    during the `fit` method and then uses these values to scale the
+    target column in the `transform` method.
+
+    Parameters
+    ----------
+    column : str
+        The name of the column to be scaled.
+
+    Attributes
+    ----------
+    target_column : str
+        The name of the column to be scaled.
+    iqr : float
+        The interquartile range of the target column.
+    med : float
+        The median of the target column.
+    """
+    
+    def __init__(self, column):
+        """Initialize the transformer with the target column name."""
+        self.target_column = column
+        self.iqr = None
+        self.med = None
+    
+    def fit(self, X, y=None):
+        """Compute the IQR and median of the target column.
+        
+        Parameters
+        ----------
+        X : pandas.DataFrame
+            The input data to fit.
+        y : ignored
+            Not used, present for API consistency.
+            
+        Returns
+        -------
+        self : object
+            Returns self.
+        """
+        # Verify that the target column exists in the DataFrame
+        if self.target_column not in X.columns:
+            raise AssertionError(f"CustomRobustTransformer.fit unrecognizable column {self.target_column}.")
+        
+        # Calculate the 25th and 75th percentiles
+        q1 = X[self.target_column].quantile(0.25)
+        q3 = X[self.target_column].quantile(0.75)
+        
+        # Calculate IQR
+        self.iqr = q3 - q1
+        
+        # Calculate median
+        self.med = X[self.target_column].median()
+        
+        return self
+    
+    def transform(self, X):
+        """Scale the target column using the IQR and median.
+        
+        Parameters
+        ----------
+        X : pandas.DataFrame
+            The input data to transform.
+            
+        Returns
+        -------
+        X_transformed : pandas.DataFrame
+            The transformed DataFrame with the target column scaled.
+        """
+        # Check if the transformer is fitted
+        if self.iqr is None or self.med is None:
+            raise AssertionError("NotFittedError: This CustomRobustTransformer instance is not fitted yet.")
+        
+        # Make a copy of the input DataFrame to avoid modifying the original
+        X_transformed = X.copy()
+        
+        # Apply the transformation only if IQR is not zero (to handle binary columns)
+        if self.iqr != 0:
+            X_transformed[self.target_column] = (X[self.target_column] - self.med) / self.iqr
+        
+        return X_transformed
 
 
 # Pipelines
@@ -679,10 +762,13 @@ titanic_transformer = Pipeline(steps=[
 
 
 customer_transformer = Pipeline(steps=[
-    ('dropper', CustomDropColumnsTransformer(column_list=['ID', 'First timer', 'Rating'], action='drop')),
+    ('dropper', CustomDropColumnsTransformer(column_list=[ 'First timer', 'Rating'], action='drop')),
     ('gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
     ('experience', CustomMappingTransformer('Experience Level', {'low': 0.0, 'medium': 1.0, 'high': 2.0})),
-    ('one_os', CustomOHETransformer(target_column='OS')),
+    #('one_os', CustomOHETransformer(target_column='OS')),
+    ('os_mapping', CustomMappingTransformer('OS', {'Android': 0.0, 'iOS': 1.0})),
     ('one_isp', CustomOHETransformer(target_column='ISP')),
-    ('time spent', CustomTukeyTransformer('Time Spent', 'inner')),
-], verbose=True)
+    #('time spent', CustomTukeyTransformer('Time Spent', 'inner')),
+    ('robust_scaler_time', CustomRobustTransformer('Time Spent')),
+    ('robust_scaler_age', CustomRobustTransformer('Age'))
+])
