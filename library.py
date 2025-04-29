@@ -691,7 +691,7 @@ class CustomRobustTransformer(BaseEstimator, TransformerMixin):
     
     def __init__(self, column):
         """Initialize the transformer with the target column name."""
-        self.target_column = column
+        self.target_column = target_column
         self.iqr = None
         self.med = None
     
