@@ -856,8 +856,6 @@ titanic_transformer = Pipeline(steps=[
     ('scale_fare', CustomRobustTransformer('Fare')),  #from last chapter
 ], verbose=True)
 
-transformed_df = titanic_transformer.fit_transform(titanic_features)
-
 
 #Build pipeline and include scalers from last chapter and imputer from this
 customer_transformer = Pipeline(steps=[
