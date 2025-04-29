@@ -689,7 +689,7 @@ class CustomRobustTransformer(BaseEstimator, TransformerMixin):
         The median of the target column.
     """
     
-    def __init__(self, column):
+    def __init__(self, target_column):
         """Initialize the transformer with the target column name."""
         self.target_column = target_column
         self.iqr = None
