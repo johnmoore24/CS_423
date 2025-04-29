@@ -1010,29 +1010,32 @@ def find_random_state(
     return rs_value, Var
 
 
+titanic_variance_based_split = 107   #add to your library
+customer_variance_based_split = 113  #add to your library
+
+
 
 # Pipelines
 titanic_transformer = Pipeline(steps=[
     ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
     ('map_class', CustomMappingTransformer('Class', {'Crew': 0, 'C3': 1, 'C2': 2, 'C1': 3})),
-    ('ohe_joined', CustomOHETransformer(target_column='Joined')),
+    ('target_joined', CustomTargetTransformer(col='Joined', smoothing=10)),
     ('tukey_age', CustomTukeyTransformer(target_column='Age', fence='outer')),
     ('tukey_fare', CustomTukeyTransformer(target_column='Fare', fence='outer')),
-    ('scale_age', CustomRobustTransformer('Age')),    #from last chapter
-    ('scale_fare', CustomRobustTransformer('Fare')),  #from last chapter
-], verbose=True)
+    ('scale_age', CustomRobustTransformer(target_column='Age')),
+    ('scale_fare', CustomRobustTransformer(target_column='Fare')),
+    ('impute', CustomKNNTransformer(n_neighbors=5)),
+    ], verbose=True)
 
 
-#Build pipeline and include scalers from last chapter and imputer from this
 customer_transformer = Pipeline(steps=[
-    ('dropper', CustomDropColumnsTransformer(column_list=[ 'First timer', 'Rating'], action='drop')),
-    ('gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
-    ('experience', CustomMappingTransformer('Experience Level', {'low': 0.0, 'medium': 1.0, 'high': 2.0})),
-    ('one_os', CustomOHETransformer(target_column='OS')),
-    #('os_mapping', CustomMappingTransformer('OS', {'Android': 0.0, 'iOS': 1.0})),
-    ('one_isp', CustomOHETransformer(target_column='ISP')),
-    #('time spent', CustomTukeyTransformer('Time Spent', 'inner')),
-    ('robust_scaler_time', CustomRobustTransformer('Time Spent')),
-    ('robust_scaler_age', CustomRobustTransformer('Age')),
-    ('knn_imputer', CustomKNNTransformer(n_neighbors=5, weights='uniform'))
-])
+    ('map_os', CustomMappingTransformer('OS', {'Android': 0, 'iOS': 1})),
+    ('target_isp', CustomTargetTransformer(col='ISP')),
+    ('map_level', CustomMappingTransformer('Experience Level', {'low': 0, 'medium': 1, 'high':2})),
+    ('map_gender', CustomMappingTransformer('Gender', {'Male': 0, 'Female': 1})),
+    ('tukey_age', CustomTukeyTransformer('Age', 'inner')),  #from chapter 4
+    ('tukey_time spent', CustomTukeyTransformer('Time Spent', 'inner')),  #from chapter 4
+    ('scale_age', CustomRobustTransformer(target_column='Age')), #from 5
+    ('scale_time spent', CustomRobustTransformer(target_column='Time Spent')), #from 5
+    ('impute', CustomKNNTransformer(n_neighbors=5)),
+    ], verbose=True)
