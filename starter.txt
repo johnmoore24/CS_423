@@ -1,4 +1,4 @@
-github_name = 'johnnycashpersonal'  #fill in with your user name
+github_name = 'johnmoore24'  #fill in with your user name
 repo_name = 'CS_423'   #fill in with your repo name
 source_file = 'library.py'  #fill in with file name
 
