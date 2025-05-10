@@ -1043,3 +1043,75 @@ customer_transformer = Pipeline(steps=[
     ('scale_time spent', CustomRobustTransformer(target_column='Time Spent')), #from 5
     ('impute', CustomKNNTransformer(n_neighbors=5)),
     ], verbose=True)
+
+
+def titanic_setup(titanic_table, transformer=titanic_transformer, rs=titanic_variance_based_split, ts=.2):
+    """
+    Setup function specifically for the Titanic dataset.
+    
+    Parameters:
+    -----------
+    titanic_table : pandas.DataFrame
+        The Titanic dataset.
+    transformer : sklearn transformer, default=titanic_transformer
+        The transformer to apply to the data.
+    rs : int, default=titanic_variance_based_split
+        Random state for train-test split.
+    ts : float, default=0.2
+        Test size for train-test split.
+        
+    Returns:
+    --------
+    x_train_numpy, x_test_numpy, y_train_numpy, y_test_numpy : numpy arrays
+        Transformed and split data in numpy format.
+    """
+    return dataset_setup(titanic_table, 'Survived', transformer, rs, ts)
+
+
+def customer_setup(customer_table, transformer=customer_transformer, rs=customer_variance_based_split, ts=.2):
+    """
+    Setup function specifically for the Customer dataset.
+    
+    Parameters:
+    -----------
+    customer_table : pandas.DataFrame
+        The Customer dataset.
+    transformer : sklearn transformer, default=customer_transformer
+        The transformer to apply to the data.
+    rs : int, default=customer_variance_based_split
+        Random state for train-test split.
+    ts : float, default=0.2
+        Test size for train-test split.
+        
+    Returns:
+    --------
+    x_train_numpy, x_test_numpy, y_train_numpy, y_test_numpy : numpy arrays
+        Transformed and split data in numpy format.
+    """
+    return dataset_setup(customer_table, 'Rating', transformer, rs, ts)
+
+
+def dataset_setup(original_table, label_column_name:str, the_transformer, rs, ts=.2):
+  # Split data into features (X) and label (y)
+  features = original_table.drop(columns=[label_column_name])
+  labels = original_table[label_column_name]
+  
+  # Split into training and testing sets
+  from sklearn.model_selection import train_test_split
+  X_train, X_test, y_train, y_test = train_test_split(
+      features, labels, test_size=ts, random_state=rs, stratify=labels
+  )
+  
+  # Apply transformer to training data
+  X_train_transformed = the_transformer.fit_transform(X_train, y_train)
+  
+  # Apply transformer to testing data (using the fitted transformer)
+  X_test_transformed = the_transformer.transform(X_test)
+  
+  # Convert to numpy arrays
+  x_train_numpy = X_train_transformed.to_numpy()
+  x_test_numpy = X_test_transformed.to_numpy()
+  y_train_numpy = y_train.to_numpy()
+  y_test_numpy = y_test.to_numpy()
+  
+  return x_train_numpy, x_test_numpy, y_train_numpy, y_test_numpy
