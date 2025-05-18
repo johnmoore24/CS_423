@@ -1090,6 +1090,49 @@ def customer_setup(customer_table, transformer=customer_transformer, rs=customer
     """
     return dataset_setup(customer_table, 'Rating', transformer, rs, ts)
 
+def threshold_results(thresh_list, actuals, predicted):
+  # Ensure 'auc' is a column in the DataFrame from the start
+  result_df = pd.DataFrame(columns=['threshold', 'precision', 'recall', 'f1', 'auc', 'accuracy'])
+  
+  for t in thresh_list:
+    yhat = [1 if v >=t else 0 for v in predicted] # Convert probabilities to 0/1 based on threshold
+    
+    precision = precision_score(actuals, yhat, zero_division=0)
+    recall = recall_score(actuals, yhat, zero_division=0)
+    f1 = f1_score(actuals, yhat, zero_division=0) # Added zero_division for consistency, though f1 by default is 0 if P and R are 0.
+    accuracy = accuracy_score(actuals, yhat)
+    
+    # Calculate AUC score using actuals and the original predicted probabilities (not yhat)
+    # This is why AUC remains constant across different thresholds in the output table.
+    auc = roc_auc_score(actuals, predicted) 
+    
+    result_df.loc[len(result_df)] = {'threshold':t, 
+                                     'precision':precision, 
+                                     'recall':recall, 
+                                     'f1':f1, 
+                                     'auc': auc, # Add the calculated AUC to the row
+                                     'accuracy':accuracy}
+
+  result_df = result_df.round(2) # Round all numerical values to 2 decimal places
+
+  # Styling for the output (as in the notebook)
+  headers = {
+    "selector": "th:not(.index_name)",
+    "props": "background-color: #800000; color: white; text-align: center"
+  }
+  properties = {"border": "1px solid black", "width": "65px", "text-align": "center"}
+
+  # The .format(precision=2) in the original notebook might be a shorthand or slight misuse.
+  # A more common way to format specific columns or all floats would be .format('{:.2f}')
+  # or by providing a dictionary. However, result_df.round(2) already handles the data.
+  # We'll keep the styling as close to the notebook's version as possible.
+  fancy_df = result_df.style.highlight_max(color = 'pink', axis = 0)\
+                           .set_properties(**properties)\
+                           .set_table_styles([headers])\
+                           .format(precision=2) # This attempts to format the 'precision' column or uses a pandas default
+
+  return (result_df, fancy_df)
+
 
 def dataset_setup(original_table, label_column_name:str, the_transformer, rs, ts=.2):
   # Split data into features (X) and label (y)
