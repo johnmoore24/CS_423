@@ -1133,6 +1133,71 @@ def threshold_results(thresh_list, actuals, predicted):
 
   return (result_df, fancy_df)
 
+def halving_search(model, grid, x_train, y_train, factor=2, min_resources="exhaust", scoring='roc_auc'):
+    """
+    Performs HalvingGridSearchCV for a given model and parameter grid,
+    using the specified factor, min_resources, and scoring.
+    Other HalvingGridSearchCV parameters are set to common values from notebook examples.
+
+    Parameters:
+    - model: The estimator instance.
+    - grid: The parameter grid (dictionary) to search.
+    - x_train: Training features.
+    - y_train: Training labels.
+    - factor: Reduction factor for HalvingGridSearchCV (default: 2).
+    - min_resources: min_resources for HalvingGridSearchCV (default: "exhaust").
+    - scoring: Scoring metric for HalvingGridSearchCV (default: 'roc_auc').
+
+    Returns:
+    - The fitted HalvingGridSearchCV object (grid_result).
+    """
+    
+    # print(f"Starting HalvingGridSearchCV for {model.__class__.__name__}...") # Optional
+    # start_time = time.time() # Optional
+
+    # Set other HalvingGridSearchCV parameters based on typical notebook usage
+    cv_val = 5
+    random_state_val = 1234 # From the KNN example's HalvingGridSearchCV call
+    n_jobs_val = -1
+    refit_val = True
+    verbose_val = 0 # Since %%capture is often used, keep internal verbose low unless debugging
+
+    search_cv = HalvingGridSearchCV(
+        estimator=model,
+        param_grid=grid,
+        factor=factor,               # From function argument
+        min_resources=min_resources, # From function argument
+        scoring=scoring,             # From function argument
+        cv=cv_val,                   # Set internally
+        random_state=random_state_val, # Set internally
+        n_jobs=n_jobs_val,           # Set internally
+        refit=refit_val,             # Set internally
+        verbose=verbose_val          # Set internally
+    )
+
+    grid_result = search_cv.fit(x_train, y_train)
+
+    # end_time = time.time() # Optional
+    # print(f"HalvingGridSearchCV finished in {end_time - start_time:.2f} seconds.") # Optional
+    # print(f"Best parameters found: {grid_result.best_params_}") # Optional
+    # print(f"Best score: {grid_result.best_score_:.4f}") # Optional
+    
+    return grid_result
+
+def sort_grid(grid):
+  sorted_grid = grid.copy()
+
+  #sort values - note that this will expand range for you
+  for k,v in sorted_grid.items():
+    sorted_grid[k] = sorted(sorted_grid[k], key=lambda x: (x is None, x))  #handles cases where None is an alternative value
+
+  #sort keys
+  sorted_grid = dict(sorted(sorted_grid.items()))
+
+  return sorted_grid
+
+
+
 
 def dataset_setup(original_table, label_column_name:str, the_transformer, rs, ts=.2):
   # Split data into features (X) and label (y)
