@@ -1,17 +1,25 @@
-from __future__ import annotations  #must be first line in your library!
+from __future__ import annotations  # must be first line in your library!
 import pandas as pd
 import numpy as np
 import types
 import warnings
 from typing import Dict, Any, Optional, Union, List, Set, Hashable, Literal, Tuple, Self, Iterable
+
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.pipeline import Pipeline
 import sklearn
 from sklearn.impute import KNNImputer
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import f1_score
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split # This is here, but dataset_setup also imports it locally. Consolidate if preferred.
 from sklearn.model_selection import ParameterGrid
+
+# Added imports for HalvingGridSearchCV
+from sklearn.experimental import enable_halving_search_cv # noqa
+from sklearn.model_selection import HalvingGridSearchCV
+
+# Added imports for metrics
+from sklearn.metrics import precision_score, recall_score, f1_score, accuracy_score, roc_auc_score
+from sklearn.metrics import f1_score
 
 sklearn.set_config(transform_output="pandas")  #says pass pandas tables through pipeline instead of numpy matrices
 
